@@ -90,6 +90,17 @@ class MoviesInfoControllerIntegrationTest {
     }
 
     @Test
+    void getMovieInfoById_returnsNotFound() {
+        String movieInfoId = "def";
+
+        webTestClient.get()
+                     .uri(V1_MOVIE_INFOS_URL + "/{id}", movieInfoId)
+                     .exchange()
+                     .expectStatus()
+                     .isNotFound();
+    }
+
+    @Test
     void updateMovieInfo() {
         String movieInfoId = "abc";
         String updatedName = "Dark Knight Rises 1";
@@ -105,6 +116,20 @@ class MoviesInfoControllerIntegrationTest {
                      .expectBody()
                      .jsonPath("$.id").isEqualTo(movieInfoId)
                      .jsonPath("$.name").isEqualTo(updatedName);
+    }
+
+    @Test
+    void updateMovieInfo_returnsNotFound() {
+        String movieInfoId = "def";
+
+        MovieInfo movieInfo = new MovieInfo("def", "Dark Knight Rises 1", 2012, List.of("Christian Bale", "Tom Hardy"), LocalDate.parse("2012-07-20"));
+
+        webTestClient.put()
+                     .uri(V1_MOVIE_INFOS_URL + "/{id}", movieInfoId)
+                     .bodyValue(movieInfo)
+                     .exchange()
+                     .expectStatus()
+                     .isNotFound();
     }
 
     @Test
