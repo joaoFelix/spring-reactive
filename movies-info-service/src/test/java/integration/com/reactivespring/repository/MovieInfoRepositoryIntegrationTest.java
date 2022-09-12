@@ -110,4 +110,24 @@ class MovieInfoRepositoryIntegrationTest {
                     .expectNextCount(2)
                     .verifyComplete();
     }
+
+    @Test
+    void findByYear() {
+        Flux<MovieInfo> flux = movieInfoRepository.findByYear(2005)
+                                                  .log();
+
+        StepVerifier.create(flux)
+                    .expectNextCount(1)
+                    .verifyComplete();
+    }
+
+    @Test
+    void findFirstByName() {
+        Mono<MovieInfo> mono = movieInfoRepository.findFirstByName("Batman Begins")
+                                                  .log();
+
+        StepVerifier.create(mono)
+                    .expectNextCount(1)
+                    .verifyComplete();
+    }
 }

@@ -1,5 +1,6 @@
 package com.reactivespring.controller;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -11,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.reactivespring.domain.MovieInfo;
 import com.reactivespring.repository.MovieInfoRepository;
@@ -141,5 +143,20 @@ class MoviesInfoControllerIntegrationTest {
                      .exchange()
                      .expectStatus()
                      .isNoContent();
+    }
+
+    @Test
+    void getMovieInfoByYear() {
+        URI uri = UriComponentsBuilder.fromUriString(V1_MOVIE_INFOS_URL)
+                                      .queryParam("year", 2005)
+                                      .buildAndExpand().toUri();
+
+        webTestClient.get()
+                     .uri(uri)
+                     .exchange()
+                     .expectStatus()
+                     .is2xxSuccessful()
+                     .expectBodyList(MovieInfo.class)
+                     .hasSize(1);
     }
 }
