@@ -9,6 +9,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.reactivespring.domain.Review;
+import com.reactivespring.exceptionhandler.GlobalErrorHandler;
 import com.reactivespring.handler.ReviewHandler;
 import com.reactivespring.repository.ReviewReactiveRepository;
 import com.reactivespring.router.ReviewRouter;
@@ -20,7 +21,7 @@ import reactor.core.publisher.Mono;
 
 @WebFluxTest
 @AutoConfigureWebTestClient
-@ContextConfiguration(classes = {ReviewRouter.class, ReviewHandler.class})
+@ContextConfiguration(classes = {ReviewRouter.class, ReviewHandler.class, GlobalErrorHandler.class})
 class ReviewsUnitTest {
 
     private final static String V1_MOVIE_REVIEWS_URL = "/v1/reviews";
@@ -48,6 +49,21 @@ class ReviewsUnitTest {
                      .expectBody(Review.class)
                      .isEqualTo(review1);
     }
+
+    @Test
+    void addReview_validatesReview() {
+        Review review = new Review(null, null, "Awesome Movie", -1.0);
+
+        webTestClient.post()
+                     .uri(V1_MOVIE_REVIEWS_URL)
+                     .bodyValue(review)
+                     .exchange()
+                     .expectStatus()
+                     .isBadRequest()
+                     .expectBody(String.class)
+                     .isEqualTo("rating.movieInfoId: must not be null, rating.negative : please pass a non-negative value");
+    }
+
 
     @Test
     void getReviews() {
