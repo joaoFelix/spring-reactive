@@ -2,6 +2,7 @@ package com.reactivespring.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.reactivespring.domain.MovieInfo;
@@ -11,7 +12,9 @@ import com.reactivespring.exception.MoviesInfoServerException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
-@RequiredArgsConstructor public class MoviesInfoRestClient {
+@Component
+@RequiredArgsConstructor
+public class MoviesInfoRestClient {
 
     @Value("${restClient.moviesInfoUrl}") private String moviesInfoUrl;
 
