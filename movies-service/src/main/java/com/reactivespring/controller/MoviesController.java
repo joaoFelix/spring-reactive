@@ -2,6 +2,7 @@ package com.reactivespring.controller;
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,9 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.reactivespring.client.MoviesInfoRestClient;
 import com.reactivespring.client.ReviewsRestClient;
 import com.reactivespring.domain.Movie;
+import com.reactivespring.domain.MovieInfo;
 import com.reactivespring.domain.Review;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -31,5 +34,10 @@ public class MoviesController {
 
                                        return reviewsMono.map(reviews -> new Movie(movieInfo, reviews));
                                    });
+    }
+
+    @GetMapping(value = "/stream", produces = MediaType.APPLICATION_NDJSON_VALUE)
+    public Flux<MovieInfo> getMovieInfosStream() {
+        return moviesInfoRestClient.getMovieInfoStream();
     }
 }

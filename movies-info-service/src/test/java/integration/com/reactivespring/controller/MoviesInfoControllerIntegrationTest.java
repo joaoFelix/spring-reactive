@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -18,6 +19,8 @@ import com.reactivespring.domain.MovieInfo;
 import com.reactivespring.repository.MovieInfoRepository;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -75,6 +78,24 @@ class MoviesInfoControllerIntegrationTest {
                      .is2xxSuccessful()
                      .expectBodyList(MovieInfo.class)
                      .hasSize(3);
+    }
+
+    @Test
+    void getAllMovieInfosAsStream() {
+        addMovieInfo();
+
+        Flux<MovieInfo> movieInfoFlux = webTestClient.get()
+                                                     .uri(V1_MOVIE_INFOS_URL + "/stream")
+                                                     .exchange()
+                                                     .expectStatus()
+                                                     .is2xxSuccessful()
+                                                     .returnResult(MovieInfo.class)
+                                                     .getResponseBody();
+
+        StepVerifier.create(movieInfoFlux)
+                    .assertNext(movieInfo -> assertNotNull(movieInfo.getId()))
+                    .thenCancel()
+                    .verify();
     }
 
     @Test

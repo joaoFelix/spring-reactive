@@ -8,19 +8,20 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import com.reactivespring.domain.Review;
 import com.reactivespring.exception.ReviewDataException;
-import com.reactivespring.exception.ReviewNotFoundException;
 import com.reactivespring.repository.ReviewReactiveRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 @Component
 @RequiredArgsConstructor
@@ -30,10 +31,13 @@ public class ReviewHandler {
     private final Validator validator;
     private final ReviewReactiveRepository reviewReactiveRepository;
 
+    private Sinks.Many<Review> reviewSink = Sinks.many().replay().latest();
+
     public Mono<ServerResponse> addReview(final ServerRequest request) {
         return request.bodyToMono(Review.class)
                       .doOnNext(this::validateReview)
                       .flatMap(reviewReactiveRepository::save)
+                      .doOnNext(reviewSink::tryEmitNext)
                       .flatMap(ServerResponse.status(HttpStatus.CREATED)::bodyValue);
     }
 
@@ -66,8 +70,8 @@ public class ReviewHandler {
         String reviewId = request.pathVariable("id");
 
         Mono<Review> existingReview = reviewReactiveRepository.findById(reviewId);
-                // Approach 1 to return a 404 - Not Found
-                //.switchIfEmpty(Mono.error(new ReviewNotFoundException(String.format("Review with id %s not found", reviewId))));
+        // Approach 1 to return a 404 - Not Found
+        //.switchIfEmpty(Mono.error(new ReviewNotFoundException(String.format("Review with id %s not found", reviewId))));
 
         return existingReview
                 .flatMap(review -> request.bodyToMono(Review.class)
@@ -88,5 +92,12 @@ public class ReviewHandler {
         return reviewReactiveRepository.findById(reviewId)
                                        .flatMap(review -> reviewReactiveRepository.deleteById(reviewId))
                                        .then(ServerResponse.noContent().build());
+    }
+
+    public Mono<ServerResponse> getReviewsStream() {
+        return ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_NDJSON)
+                .body(reviewSink.asFlux(), Review.class)
+                .log();
     }
 }

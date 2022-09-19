@@ -20,6 +20,7 @@ public class ReviewRouter {
                                                              .POST("", reviewHandler::addReview)
                                                              .PUT("/{id}", reviewHandler::updateReview)
                                                              .DELETE("/{id}", reviewHandler::deleteReview))
+                                                            .GET("/v1/reviews/stream", request -> reviewHandler.getReviewsStream())
                 .GET("/v1/helloworld", request -> ServerResponse.ok().bodyValue("Hello world"))
                 .build();
     }
