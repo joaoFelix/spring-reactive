@@ -9,10 +9,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import com.reactivespring.domain.Movie;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -69,8 +73,9 @@ class MoviesControllerIntgTest {
     @Test
     void getMovieById_movieInfo_404() {
         String movieId = "movieId";
+        UrlPattern getMovieInfoUrlPattern = urlEqualTo(MOVIE_INFOS_URL + "/" + movieId);
 
-        stubFor(get(urlEqualTo(MOVIE_INFOS_URL + "/" + movieId))
+        stubFor(get(getMovieInfoUrlPattern)
                         .willReturn(aResponse().withStatus(NOT_FOUND)));
 
         webTestClient.get()
@@ -80,18 +85,22 @@ class MoviesControllerIntgTest {
                      .is4xxClientError()
                      .expectBody(String.class)
                      .isEqualTo("No MovieInfo available with the id " + movieId);
+
+        WireMock.verify(1, getRequestedFor(getMovieInfoUrlPattern));
     }
 
     @Test
     void getMovieById_reviews_404() {
         String movieId = "movieId";
+        UrlPathPattern getReviewsUrlPattern = urlPathEqualTo(MOVIE_REVIEWS_URL);
 
         stubFor(get(urlEqualTo(MOVIE_INFOS_URL + "/" + movieId))
                         .willReturn(aResponse()
                                             .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                                             .withBodyFile("movieinfo.json")));
 
-        stubFor(get(urlPathEqualTo(MOVIE_REVIEWS_URL))
+
+        stubFor(get(getReviewsUrlPattern)
                         .willReturn(aResponse()
                                             .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                                             .withBody("")));
@@ -108,15 +117,18 @@ class MoviesControllerIntgTest {
                          assertEquals(0, movie.getReviewList().size());
                          assertEquals("Batman Begins", movie.getMovieInfo().getName());
                      });
+
+        WireMock.verify(1, getRequestedFor(getReviewsUrlPattern));
     }
 
     @Test
     void getMovieById_movieInfo_500() {
         String movieId = "movieId";
-
         String expectedErrorMessage = "Movie Info Service Unavailable";
 
-        stubFor(get(urlEqualTo(MOVIE_INFOS_URL + "/" + movieId))
+        UrlPattern getMovieInfoUrlPattern = urlEqualTo(MOVIE_INFOS_URL + "/" + movieId);
+
+        stubFor(get(getMovieInfoUrlPattern)
                         .willReturn(aResponse()
                                             .withStatus(INTERNAL_SERVER_ERROR)
                                             .withBody(expectedErrorMessage)));
@@ -128,12 +140,14 @@ class MoviesControllerIntgTest {
                      .is5xxServerError()
                      .expectBody(String.class)
                      .isEqualTo(expectedErrorMessage);
+
+        WireMock.verify(4, getRequestedFor(getMovieInfoUrlPattern));
     }
 
     @Test
     void getMovieById_reviews_500() {
         String movieId = "movieId";
-
+        UrlPathPattern getReviewsUrlPattern = urlPathEqualTo(MOVIE_REVIEWS_URL);
 
         stubFor(get(urlEqualTo(MOVIE_INFOS_URL + "/" + movieId))
                         .willReturn(aResponse()
@@ -142,7 +156,7 @@ class MoviesControllerIntgTest {
 
         String expectedErrorMessage = "Reviews Service Unavailable";
 
-        stubFor(get(urlPathEqualTo(MOVIE_REVIEWS_URL))
+        stubFor(get(getReviewsUrlPattern)
                         .willReturn(aResponse()
                                             .withStatus(INTERNAL_SERVER_ERROR)
                                             .withBody(expectedErrorMessage)));
@@ -154,5 +168,7 @@ class MoviesControllerIntgTest {
                      .is5xxServerError()
                      .expectBody(String.class)
                      .isEqualTo(expectedErrorMessage);
+
+        WireMock.verify(4, getRequestedFor(getReviewsUrlPattern));
     }
 }

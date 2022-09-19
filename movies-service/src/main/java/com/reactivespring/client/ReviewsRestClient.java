@@ -9,6 +9,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.reactivespring.domain.Review;
 import com.reactivespring.exception.ReviewsClientException;
 import com.reactivespring.exception.ReviewsServerException;
+import com.reactivespring.util.RetryUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class ReviewsRestClient {
                         .onStatus(HttpStatus::is5xxServerError, clientResponse -> clientResponse.bodyToMono(String.class)
                                                                                                 .flatMap(errorMsg -> Mono.error(new ReviewsServerException(errorMsg))))
                         .bodyToFlux(Review.class)
+                        .retryWhen(RetryUtil.retrySpec())
                         .log();
     }
 }
